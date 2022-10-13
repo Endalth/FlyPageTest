@@ -1,0 +1,95 @@
+﻿@using System.Collections
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations.Schema
+@using System.ComponentModel
+@model GenericModel
+@{
+}
+
+@if(Model.ActualModel != null)
+{
+    <form asp-action="Add" method="post">
+        <input type="hidden" name="RequestedType" value="@Model.RequestedType">
+
+        <input type="submit" value="Kaydet">
+        @foreach(var currentDTOProp in Model.ActualModel.GetType().GetProperties())
+        {
+            <br />
+            Type currentPropType = currentDTOProp.PropertyType;
+            if(!currentPropType.IsGenericType)
+            {
+                bool propNotMapped = currentDTOProp.GetCustomAttribute(typeof(NotMappedAttribute)) != null;
+                if(!propNotMapped)
+                {
+                    bool isHidden = currentDTOProp.GetCustomAttribute(typeof(HiddenInputAttribute)) != null;
+                    if(isHidden)
+                    {
+                        <input type="hidden" name="@currentDTOProp.Name" value="@currentDTOProp.GetValue(Model.ActualModel)">
+                    }
+                    else
+                    {
+                        var displayAttribute = currentDTOProp.GetCustomAttribute(typeof(DisplayAttribute));
+                        var displayName = ""; 
+                        if(displayAttribute != null)
+                            displayName = ((DisplayAttribute)displayAttribute).Name;
+
+                        <label name="@currentDTOProp.Name">
+                            @displayName
+                        </label>
+
+                        bool isPassword = currentDTOProp.GetCustomAttribute(typeof(PasswordPropertyTextAttribute)) != null;
+                        if(isPassword)
+                        {
+                            @*<label asp-for="@currentDTOProp.Name">
+                                @displayName
+                            </label>*@
+                            <input type="password" name="@currentDTOProp.Name">
+                        }
+                        else
+                        {
+                            bool isBool = currentPropType == typeof(bool);
+                            if(isBool)
+                            {
+                                @*<label asp-for="@currentDTOProp.Name">
+                                    @displayName
+                                </label>*@
+                                <input type="checkbox" name="@currentDTOProp.Name">
+                            }
+                            else
+                            {
+                                bool isDateTime = currentPropType == typeof(DateTime);
+                                if(isDateTime)
+                                {
+                                    @*<label asp-for="@currentDTOProp.Name">
+                                        @displayName
+                                    </label>*@
+                                    <input type="datetime-local" name="@currentDTOProp.Name">
+                                }
+                                else
+                                {
+                                    @*<label asp-for="@currentDTOProp.Name">
+                                        @displayName
+                                    </label>*@
+                                    <input type="text" name="@currentDTOProp.Name">
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if(currentPropType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                Type listType = currentPropType.GetGenericArguments()[0];
+                if(listType == typeof(SelectListItem))
+                {
+                    var columnAttribute = currentDTOProp.GetCustomAttribute(typeof(ColumnAttribute));
+                    var columnName = ((ColumnAttribute)columnAttribute).Name;
+                    <select name="@columnName" asp-items="@currentDTOProp.GetValue(Model.ActualModel) as List<SelectListItem>">
+
+                    </select>
+                }
+            }
+        }
+    </form>
+}

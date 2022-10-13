@@ -1,0 +1,71 @@
+﻿@using System.Collections
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@model GenericModel
+@{
+}
+
+<a asp-action="Index" asp-route-requesttype="status">First Type</a>
+<br />
+<a asp-action="Index" asp-route-requesttype="corp">Second Type</a>
+<br />
+<br />
+@if (Model.ActualModel != null)
+{
+    <a asp-action="Add" asp-route-requesttype="@Model.RequestedType">Ekle</a>
+    @foreach (var actualModelProps in Model.ActualModel.GetType().GetProperties())
+    {
+
+        Type type = actualModelProps.PropertyType;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            Type listType = type.GetGenericArguments()[0];
+
+            if (listType.IsClass)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            @foreach (var insideListClassProps in listType.GetProperties())
+                            {
+                                <th>
+                                    @{
+                                        var displayAttributes = insideListClassProps.GetCustomAttribute(typeof(DisplayAttribute));
+                                        var displayAtt = (DisplayAttribute)displayAttributes;
+                                    }
+
+                                    @displayAtt.Name
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var subClass in actualModelProps.GetValue(Model.ActualModel) as IEnumerable)
+                        {
+                            <tr>
+                                @{
+                                    Dictionary<string, string> routeData = new Dictionary<string, string>();
+                                    routeData["requesttype"] = Model.RequestedType;
+                                }
+
+                                @foreach (var item in subClass.GetType().GetProperties())
+                                {
+                                    @if (item.GetCustomAttribute(typeof(KeyAttribute)) != null)
+                                    {
+                                        routeData.Add(item.Name.ToLower(), item.GetValue(subClass).ToString());
+                                    }
+
+                                    Type itemType = item.PropertyType;
+                                    <td>@item.GetValue(subClass)</td>
+                                }
+                                <td><a asp-action="Delete" asp-all-route-data="routeData">SİL</a></td>
+                                <td></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+        <br />
+    }
+}

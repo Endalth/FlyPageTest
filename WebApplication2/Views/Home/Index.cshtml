@@ -1,0 +1,54 @@
+﻿@using System.Collections;
+@model GenericModel
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@foreach(var prop in Model.ActualModel.GetType().GetProperties()){
+
+    Type type = prop.PropertyType;
+    if(type.IsPrimitive || type  == typeof(string))
+    {
+        @(prop.Name + " " + Convert.ChangeType(prop.GetValue(Model.ActualModel), type)?.ToString())
+    }
+    else if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+    {
+        Type listType = type.GetGenericArguments()[0];
+
+        if (listType.IsPrimitive || listType == typeof(string))
+        {
+            foreach (var item in prop.GetValue(Model.ActualModel) as IEnumerable)
+            {
+                @item
+                <br />
+            }
+
+        }
+        else if(listType.IsClass)
+        {
+            foreach (var subClass in prop.GetValue(Model.ActualModel) as IEnumerable)
+            {
+                foreach (var item in subClass.GetType().GetProperties())
+                {
+                    Type itemType = item.PropertyType;
+                    if (itemType.IsPrimitive || itemType == typeof(string))
+                    {
+                        @(item.Name + " " + Convert.ChangeType(item.GetValue(subClass), itemType)?.ToString())
+                    }
+                    <br />
+                }
+            }
+        }
+    }
+    <br />
+}
+
+<script>
+    localStorage.set("asda","asdasd")
+</script>
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
